@@ -12,7 +12,7 @@ const IndexPage: NextPage = function () {
       <Box maxW="md" mx="auto">
         <img src="/main_logo.svg" alt="메인 로고" />
         <Flex justify="center">
-          <Heading>#Qna</Heading>
+          <Heading>#QnA</Heading>
         </Flex>
       </Box>
       <Center mt="20">

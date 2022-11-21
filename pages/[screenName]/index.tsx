@@ -1,14 +1,69 @@
 import { GetServerSideProps, NextPage } from 'next';
-import { Avatar, Box, Button, FormControl, FormLabel, Flex, Text, Textarea, useToast, Switch } from '@chakra-ui/react';
+import {
+  Avatar,
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Flex,
+  Text,
+  Textarea,
+  useToast,
+  Switch,
+  VStack,
+} from '@chakra-ui/react';
 import ResizeTextArea from 'react-textarea-autosize';
 import { useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { ServiceLayout } from '@/components/service_layout';
 import { useAuth } from '@/contexts/auth_user.context';
 import { InAuthUser } from '@/models/in_auth_user';
+import MessageItem from '@/components/message_item';
 
 interface Props {
   userInfo: InAuthUser | null;
+}
+
+async function postMessage({
+  uid,
+  message,
+  author,
+}: {
+  uid: string;
+  message: string;
+  author?: {
+    displayName: string;
+    photoURL?: string;
+  };
+}) {
+  if (message.length <= 0) {
+    return {
+      result: false,
+      message: '메시지를 입력해주세요',
+    };
+  }
+  try {
+    await fetch('/api/messages.add', {
+      method: 'post',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        uid,
+        message,
+        author,
+      }),
+    });
+    return {
+      result: true,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      result: false,
+      message: '메시지 등록 실패',
+    };
+  }
 }
 
 const UserHomePage: NextPage<Props> = function ({ userInfo }) {
@@ -21,7 +76,7 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
   }
 
   return (
-    <ServiceLayout title="user home" minH="100vh" backgroundColor="gray.50">
+    <ServiceLayout title={`${userInfo.displayName}의 홈`} minH="100vh" backgroundColor="gray.50">
       <Box maxW="md" mx="auto" pt="6">
         <Box borderWidth="1px" borderRadius="lg" overflow="hidden" mb="2" bg="white">
           <Flex p="6">
@@ -73,6 +128,30 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
               variant="solid"
               size="sm"
               ml={2}
+              onClick={async () => {
+                const postDate: {
+                  message: string;
+                  uid: string;
+                  author?: {
+                    displayName: string;
+                    photoURL?: string;
+                  };
+                } = {
+                  message,
+                  uid: userInfo.uid,
+                };
+                if (isAnonymous === false) {
+                  postDate.author = {
+                    photoURL: authUser?.photoURL ?? '/anonymous.svg',
+                    displayName: authUser?.displayName ?? 'anonymous',
+                  };
+                }
+                const messageResp = await postMessage(postDate);
+                if (messageResp.result === false) {
+                  toast({ title: '메세지 등록 실패', position: 'top-right' });
+                }
+                setMessage('');
+              }}
             >
               Send
             </Button>
@@ -97,6 +176,21 @@ const UserHomePage: NextPage<Props> = function ({ userInfo }) {
             </FormLabel>
           </FormControl>
         </Box>
+        <VStack spacing="12px" mt="6">
+          <MessageItem
+            uid="asdf"
+            displayName="test"
+            photoURL={authUser?.photoURL ?? ''}
+            isOwner={false}
+            item={{
+              id: 'test',
+              message: 'test_asdf',
+              createAt: '2022-09-21T13:15:55+09:00',
+              reply: 'reply',
+              replyAt: '2022-10-24T13:15:55+09:00',
+            }}
+          />
+        </VStack>
       </Box>
     </ServiceLayout>
   );

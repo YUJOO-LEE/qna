@@ -55,30 +55,58 @@ async function post({
   });
 }
 
-async function list({ uid }: { uid: string }) {
+async function updateMessage({ uid, messageId, deny = true }: { uid: string; messageId: string; deny: boolean }) {
   const memberRef = Firestore.collection(MEMBER_COL).doc(uid);
-  const listData = await Firestore.runTransaction(async (transaction) => {
+  const messageRef = Firestore.collection(MEMBER_COL).doc(uid).collection(MSG_COL).doc(messageId);
+
+  const result = await Firestore.runTransaction(async (transaction) => {
     const memberDoc = await transaction.get(memberRef);
+    const messageDoc = await transaction.get(messageRef);
     if (memberDoc.exists === false) {
       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자입니다.' });
     }
-
-    const messageCol = memberRef.collection(MSG_COL).orderBy('createAt', 'desc');
-    const messageColDoc = await transaction.get(messageCol);
-    const data = messageColDoc.docs.map((mv) => {
-      const docData = mv.data() as Omit<InMessageServer, 'id'>;
-      const returnData = {
-        ...docData,
-        id: mv.id,
-        createAt: docData.createAt.toDate().toISOString(),
-        replyAt: docData.replyAt ? docData.replyAt.toDate().toISOString() : undefined,
-      } as InMessage;
-      return returnData;
-    });
-    return data;
+    if (messageDoc.exists === false) {
+      throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 문서' });
+    }
+    await transaction.update(messageRef, { deny });
+    const messageDate = messageDoc.data() as InMessageServer;
+    return {
+      ...messageDate,
+      id: messageId,
+      deny,
+      createAt: messageDate.createAt.toDate().toISOString(),
+      replyAt: messageDate.replyAt ? messageDate.replyAt.toDate().toISOString() : undefined,
+    };
   });
-  return listData;
+  return result;
 }
+
+// async function list({ uid }: { uid: string }) {
+//   const memberRef = Firestore.collection(MEMBER_COL).doc(uid);
+//   const listData = await Firestore.runTransaction(async (transaction) => {
+//     const memberDoc = await transaction.get(memberRef);
+//     if (memberDoc.exists === false) {
+//       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 사용자입니다.' });
+//     }
+
+//     const messageCol = memberRef.collection(MSG_COL).orderBy('createAt', 'desc');
+//     const messageColDoc = await transaction.get(messageCol);
+//     const data = messageColDoc.docs.map((mv) => {
+//       const docData = mv.data() as Omit<InMessageServer, 'id'>;
+//       const isDeny = docData.deny !== undefined && docData.deny === true;
+//       const returnData = {
+//         ...docData,
+//         id: mv.id,
+//         message: isDeny ? '비공개 메세지 입니다.' : docData.message,
+//         createAt: docData.createAt.toDate().toISOString(),
+//         replyAt: docData.replyAt ? docData.replyAt.toDate().toISOString() : undefined,
+//       } as InMessage;
+//       return returnData;
+//     });
+//     return data;
+//   });
+//   return listData;
+// }
 
 async function listWithPage({ uid, page = 1, size = 10 }: { uid: string; page?: number; size?: number }) {
   const memberRef = Firestore.collection(MEMBER_COL).doc(uid);
@@ -106,9 +134,11 @@ async function listWithPage({ uid, page = 1, size = 10 }: { uid: string; page?: 
     const messageColDoc = await transaction.get(messageCol);
     const data = messageColDoc.docs.map((mv) => {
       const docData = mv.data() as Omit<InMessageServer, 'id'>;
+      const isDeny = docData.deny !== undefined && docData.deny === true;
       const returnData = {
         ...docData,
         id: mv.id,
+        message: isDeny ? '비공개 메세지 입니다.' : docData.message,
         createAt: docData.createAt.toDate().toISOString(),
         replyAt: docData.replyAt ? docData.replyAt.toDate().toISOString() : undefined,
       } as InMessage;
@@ -139,8 +169,10 @@ async function get({ uid, messageId }: { uid: string; messageId: string }) {
       throw new CustomServerError({ statusCode: 400, message: '존재하지 않는 문서' });
     }
     const messageDate = messageDoc.data() as InMessageServer;
+    const isDeny = messageDate.deny !== undefined && messageDate.deny === true;
     return {
       ...messageDate,
+      message: isDeny ? '비공개 메세지 입니다.' : messageDate.message,
       id: messageId,
       createAt: messageDate.createAt.toDate().toISOString(),
       replyAt: messageDate.replyAt ? messageDate.replyAt.toDate().toISOString() : undefined,
@@ -172,7 +204,7 @@ async function postReply({ uid, messageId, reply }: { uid: string; messageId: st
 
 const MessageModel = {
   post,
-  list,
+  updateMessage,
   listWithPage,
   get,
   postReply,

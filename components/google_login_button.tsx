@@ -1,4 +1,4 @@
-import { Box, Button } from '@chakra-ui/react';
+import { Button, Center } from '@chakra-ui/react';
 
 interface Props {
   onClick: () => void;
@@ -6,7 +6,7 @@ interface Props {
 
 export const GoogleLoginButton = function ({ onClick }: Props) {
   return (
-    <Box>
+    <Center>
       <Button
         size="lg"
         width="full"
@@ -21,6 +21,6 @@ export const GoogleLoginButton = function ({ onClick }: Props) {
       >
         Google 계정으로 시작하기
       </Button>
-    </Box>
+    </Center>
   );
 };

@@ -1,4 +1,5 @@
-import { Box, Button, Flex, Spacer } from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, IconButton, Menu, MenuButton, MenuItem, MenuList, Spacer } from '@chakra-ui/react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/auth_user.context';
 
 const GNB = function () {
@@ -17,9 +18,23 @@ const GNB = function () {
     </Button>
   );
   const logOutBtn = (
-    <Button as="a" fontSize="sm" fontWeight={400} variant="link" onClick={signOut}>
-      Logout
-    </Button>
+    <Menu>
+      <MenuButton
+        as={IconButton}
+        icon={<Avatar size="md" src={authUser?.photoURL ?? '/anonymous.svg'} />}
+        borderRadius="full"
+      />
+      <MenuList>
+        <MenuItem
+          onClick={() => {
+            window.location.href = `/${authUser?.email?.replace('@gmail.com', '')}`;
+          }}
+        >
+          My Page
+        </MenuItem>
+        <MenuItem onClick={signOut}>Logout</MenuItem>
+      </MenuList>
+    </Menu>
   );
 
   const authInitialized = loading || authUser === null;
@@ -29,7 +44,9 @@ const GNB = function () {
       <Flex minH="60px" py={{ base: 2 }} px={{ base: 4 }} align="center" maxW="md" mx="auto">
         <Spacer />
         <Box flex="1">
-          <img style={{ height: '40px' }} src="/logo.svg" alt="logo" />
+          <Link href="/">
+            <img style={{ height: '40px', cursor: 'pointer' }} src="/logo.svg" alt="logo" />
+          </Link>
         </Box>
         <Box justifyContent="flex-end">{authInitialized ? loginBtn : logOutBtn}</Box>
       </Flex>

@@ -7,7 +7,6 @@ import { InAuthUser } from '../in_auth_user';
 
 const MEMBER_COL = 'members';
 const MSG_COL = 'messages';
-const SCR_NAME_COL = 'screen_names';
 const { Firestore } = FirebaseAdmin.getInstance();
 
 async function post({
